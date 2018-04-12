@@ -1,93 +1,162 @@
 #include<stdio.h>
-#include<stdlib.h>
 #include<pthread.h>
-
+#include<stdlib.h>
 pthread_mutex_t l;
-/*
-enum directions{
-                east=1,west=2,north=3,south=4
+
+struct trafic
+{
+int East;
+int West;
+int North;
+int South;
 };
-*/
-// purpose of the generating the random number we just asssuming the random number as a direction
-static int origin1,destination1;
-static int origin2,destination2;
+void * EW();void * EN();void * ES();void * WE();void * WN();void * WS();void * NE();void * NW();void * NS();void * SE();void * SW();void * SN();
+// East direction
 
-void *vehicle1()
-{  
-   pthread_mutex_lock(&l);
-   origin1=rand()%4+1;
-   destination1=rand()%4+1;    //generates the random direction which is assuming as a random direction
-   
-  printf("Origin of the Vehicle1 is:%d\n",origin1);
-  printf("Destination of the Vehicle1 is:%d\n",destination1);
-  
-   if(origin1==origin2 ||destination1==destination2)
-    {
-     printf("Vehicle2 is entering in critical section\n");
-     sleep(1);
-    }
-    else if(origin1==destination2 ||origin2==destination1)
-    {
-      printf("Vehicle 2 is entering in critical section\n");
-      sleep(1);
-    }
-    else if(origin1==origin2  ||destination1!=destination2)
-   {
-     printf("Vehicle 2 is entering in critical secition\n");
-     sleep(1);
-   }
-    else{
-         printf("Vehicle 1 and 2 are colliding\n ");  
-      } 
-   pthread_mutex_unlock(&l);
-
+void * EW()
+{
+	EN();     
+	NW();
+}
+void * EN()
+{
+	pthread_mutex_lock(&l);
+	printf("\nYou Are In North\n");
+	pthread_mutex_unlock(&l);
+}
+void * ES()
+{
+	pthread_mutex_lock(&l);
+	printf("\nYou Are In South\n");
+	pthread_mutex_unlock(&l);
 }
 
-void *vehicle2()
+// West direction
+
+void * WE()
 {
-    pthread_mutex_lock(&l);
-    origin2=rand()%4+1;
-    destination2=rand()%4+1;
-    printf("\nOrigin of the Vehicle2 is:%d\n",origin2);
-    printf("Destination of the Vehicle2 is:%d\n",destination2);
-
-    if(origin1==origin2  ||destination1==destination2)
-    {
-       printf("Vehicle1 is entering in critical section\n");
-       sleep(1);
-    }
-    else if(origin1==destination2 || origin2==destination1)
-    {
-      printf("Vehicle 1 is entering in crical section\n");
-      sleep(1);
-    }
-    else if(origin1==origin2 ||destination1!=destination2)
-    {
-      printf("Vehicle 1 is entering in crical section\n");
-      sleep(1);
-    }
-   else{
-    printf("Vehicle 1 and Vehicle2 are colliding!!!");
-   }
-
-  pthread_mutex_unlock(&l); 
+	WS();
+	SE();
+}
+void *WN()
+{
+	pthread_mutex_lock(&l);
+	printf("\nYou Are In North\n");
+	pthread_mutex_unlock(&l);
+}
+void *WS()
+{
+	pthread_mutex_lock(&l);
+	printf("\nYou Are In South\n");
+	pthread_mutex_unlock(&l);
 }
 
-int main()
+// North direction
+
+void *NE()   //For North - East Direction
 {
-  printf("-------------------------------------------------------------\n");
-  printf("-------------------------------------------------------------\n");
-  printf("---------------Traffic Intersection Problem------------------\n");
-  printf("I am taking the Two Cars for doing the demo assumption for avoiding the deadlocks!!!\n");
-  printf("Directions:::\nWest=1\nNorth=2\nEast=3\nSouth=4\n");
+	pthread_mutex_lock(&l);
+	printf("\nYou Are In East\n");
+	pthread_mutex_unlock(&l);
+}
+void *NW()   //For North - West Direction
+{
+	pthread_mutex_lock(&l);
+	printf("\nYou Are In West\n");
+	pthread_mutex_unlock(&l);
+}
+void *NS()   //For North - South Direction
+{
+	NE(); 
+	ES();
+}
 
-  pthread_mutex_init(&l,NULL);       //we don't share any shared variable with the fork 
-  pthread_t p,q;
+// South direction
 
-  pthread_create(&p,NULL,vehicle1,NULL);
-  pthread_create(&q,NULL,vehicle2,NULL);
+void *SE()   //For South - East Direction
+{
+	pthread_mutex_lock(&l);
+	
+	printf("\nYou Are In South\n");
+	pthread_mutex_unlock(&l);
+}
 
-  pthread_join(p,NULL);
-  pthread_join(q,NULL);
- 
+void *SW()
+{
+	pthread_mutex_lock(&l);
+	
+	printf("\nYou Are In West(South To West)\n");
+	pthread_mutex_unlock(&l);
+}
+
+void *SN()
+{
+	SW();
+	WN();
+}
+
+main()
+{
+	pthread_mutex_init(&l, 0);
+	pthread_t t1, t2, t3, t4;
+	struct trafic * p;
+	p->East = 0, p->West = 1, p->North = 2, p->South = 3; 
+	int Source = rand()%4, Dest = rand()%4, choice, c;
+	printf("\nYour Random Source Is %d\n", Source);
+	printf("\nYour Random Destination Is %d\n", Dest);
+	choice = Source;
+	switch(choice)
+	{        
+	case 0:
+		if(Source == p->East && Dest == p->West){        //E-W   2 fun
+			pthread_create(&t1, NULL, EW, NULL);
+			pthread_join(t1, NULL);
+		}
+		else if(Source == p->East && Dest == p->North){  //E-N
+			pthread_create(&t1, NULL, EN, NULL);
+			pthread_join(t1, NULL);}
+		else if(Source == p->East && Dest == p->South){  //E-S
+			pthread_create(&t1, NULL, ES, NULL);
+			pthread_join(t1, NULL);}
+		break;
+		
+	case 1:
+		if(Source == p->West && Dest == p->North) {     //W-N
+			pthread_create(&t2, NULL, WN, NULL);
+			pthread_join(t2, NULL);}
+		else if(Source == p->West && Dest == p->South) { //W-S
+			pthread_create(&t2, NULL, WS, NULL);
+			pthread_join(t2, NULL);}
+		else if(Source == p->West && Dest == p->East) {  //W-E  2 fun
+			pthread_create(&t2, NULL, WE, NULL);
+			pthread_join(t2, NULL);}
+		break;
+	case 2:	
+		if(Source == p->North && Dest == p->East){  //N-E
+			pthread_create(&t3, NULL, NE, NULL);
+			pthread_join(t3, NULL);}
+		else if(Source == p->North && Dest == p->South){ //N-S  2 fun
+			pthread_create(&t3, NULL, NS, NULL);
+			pthread_join(t3, NULL);}
+		else if(Source == p->North && Dest == p->West){  //N-W
+			pthread_create(&t3, NULL, NW, NULL);
+			pthread_join(t3, NULL);}
+		break;
+	case 3:
+		if(Source == p->South && Dest == p->West) { //S-W
+			pthread_create(&t4, NULL, SW, NULL);
+			pthread_join(t4, NULL);}
+		else if(Source == p->South && Dest == p->East){  //S-E
+			pthread_create(&t4, NULL, SE, NULL);
+			pthread_join(t4, NULL);}
+		else if(Source == p->South && Dest == p->North){  //S-N  2 fun
+			pthread_create(&t4, NULL, SN, NULL);
+			pthread_join(t4, NULL);}
+		break;
+	case 4:
+		exit(0);
+	default:
+		printf("\nPlease choose a valid choice\n");
+	}
+	
 }
